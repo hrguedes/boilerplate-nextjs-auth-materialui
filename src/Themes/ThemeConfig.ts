@@ -1,14 +1,12 @@
-import { createTheme } from "@mui/material";
+import { createTheme } from '@mui/material';
+import { useMemo } from 'react';
+
+import customShadows from './customShadows';
+import palette from './pallete';
 
 const BaseTheme = createTheme({
-    palette: {
-        primary: {
-            main: "#00b0ff",
-        },
-        secondary: {
-            main: "#ff1744",
-        },
-    }
+    palette,
+    shape: { borderRadius: 6 }
 });
 
 export default BaseTheme;

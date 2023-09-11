@@ -1,5 +1,5 @@
 import { Inter } from 'next/font/google'
-import { useContext } from 'react'
+import { useContext, useState } from 'react'
 
 // ui
 import Avatar from '@mui/material/Avatar';
@@ -8,13 +8,13 @@ import CssBaseline from '@mui/material/CssBaseline';
 import TextField from '@mui/material/TextField';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
-import Link from '@mui/material/Link';
 import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Swal from 'sweetalert2'
 import Grid from '@mui/material/Grid'; // Grid version 1
+import { CircularProgress } from '@mui/material';
 
 // context
 import { AuthContext } from '@/src/contexts/AuthContext';
@@ -25,31 +25,70 @@ import ApiService from '@/src/services/ServiceApi';
 // models
 import UserAutenticated from '@/src/models/responses/UserAutenticated';
 import ReturnOk from '@/src/models/Base/ReturnOk';
-
-// copy 
-function Copyright(props: any) {
-    return (
-        <Typography variant="body2" color="text.secondary" align="center" {...props}>
-            {'Copyright © '}
-            <Link color="inherit" href="https://mui.com/">
-                Your Website
-            </Link>{' '}
-            {new Date().getFullYear()}
-            {'.'}
-        </Typography>
-    );
-}
+import Copyright from '@/src/components/molecules/Copyright';
 
 
 const inter = Inter({ subsets: ['latin'] })
 const Login = () => {
     const { SignIn } = useContext(AuthContext);
-    async function handleLogin() {
+    const [inputUser, setInputUser] = useState('');
+    const [inputUserError, setInputUserError] = useState(false);
+    const [inputPassword, setInputPassword] = useState('');
+    const [inputPasswordError, setInputPasswordError] = useState(false);
+    const [alerts, setAlerts] = useState<string[]>([]);
+    const [loading, setLoading] = useState(false);
+
+
+    async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        setLoading(true);
         var api = new ApiService();
-        const ret: ReturnOk<UserAutenticated> = await api.post("/v1/Auth/login", {
-            email: 'hugo.guedes@hrguedes.dev',
-            password: '123123'
-        });
+
+        if (inputUser === '') {
+            setInputUserError(true);
+        } else {
+            setInputUserError(false);
+        }
+        if (inputPassword === '') {
+            setInputPasswordError(true);
+        } else {
+            setInputPasswordError(false);
+        }
+
+        if (inputUser === '' || inputPassword === '') {
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'Please insert all inputs!',
+            });
+            setLoading(false);
+            return;
+        }
+
+
+        // const ret: ReturnOk<UserAutenticated> = await api.post("/v1/Auth/login", {
+        //     email: 'hugo.guedes@hrguedes.dev',
+        //     password: '123123'
+        // });
+        // mocking var ret for testing
+        var ret = {
+            ok: true,
+            response: {
+                user: {
+                    id: "1",
+                    name: 'Hugo Guedes',
+                    email: 'mail@mail.com',
+                    userType: 'ROOT',
+                },
+                roles: ['admin'],
+                token: 'token',
+                tokenExpires: new Date()
+            },
+            messages: [{
+                message: 'Success',
+                key: 'Success'
+            }]
+        };
         if (ret.ok) {
             if (ret.response)
                 await SignIn({
@@ -63,17 +102,12 @@ const Login = () => {
                 icon: 'error',
                 title: 'Oops...',
                 text: ret.messages[0].message,
-            })
+            });
+            setAlerts(ret.messages.map(x => x.message));
         }
     }
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        const data = new FormData(event.currentTarget);
-        console.log({
-            email: data.get('email'),
-            password: data.get('password'),
-        });
-    };
+
+
     return (
         <Grid container component="main" sx={{ height: '100vh' }}>
             <CssBaseline />
@@ -107,11 +141,13 @@ const Login = () => {
                     <Typography component="h1" variant="h5">
                         Sign in
                     </Typography>
-                    <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 1 }}>
+                    <Box component="form" noValidate onSubmit={handleLogin} sx={{ mt: 1 }}>
                         <TextField
                             margin="normal"
                             required
+                            error={inputUserError}
                             fullWidth
+                            onChange={(e) => setInputUser(e.target.value)}
                             id="email"
                             label="Email Address"
                             name="email"
@@ -122,9 +158,11 @@ const Login = () => {
                             margin="normal"
                             required
                             fullWidth
+                            error={inputPasswordError}
                             name="password"
                             label="Password"
                             type="password"
+                            onChange={(e) => setInputPassword(e.target.value)}
                             id="password"
                             autoComplete="current-password"
                         />
@@ -132,13 +170,19 @@ const Login = () => {
                             control={<Checkbox value="remember" color="primary" />}
                             label="Remember me"
                         />
-                        <Button
+                       <Button
                             type="submit"
                             fullWidth
+                            disabled={loading}
                             variant="contained"
                             sx={{ mt: 3, mb: 2 }}
                         >
-                            Sign In
+                            {loading ? (
+                                <CircularProgress />
+                            ) : (
+                                <span>Sign In</span>
+                            )}
+                            
                         </Button>
                         <Copyright sx={{ mt: 5 }} />
                     </Box>
